@@ -1,9 +1,12 @@
 # memorygraph
-MATLAB/octave unix tool to record MATLAB/octave memory and CPU usage vs time
+MATLAB/octave unix tool to record true MATLAB/octave memory and CPU usage vs time
 
 Alex Barnett 1/30/18
 
-<img src="selftest.png" width="400"/>
+<img src="selftest.png" width="600"/>
+
+One point of this tool is to be able to extract true peak RAM usage by
+a MATLAB/ocatve code, without the need to continuously human-read (h)top.
 
 ### Usage
 
@@ -23,12 +26,13 @@ To read off graph recorded so far:
 `[bytes est_times cpu_times cpu_usages] = memorygraph('get');`
 
 Outputs:
+
   `bytes` : total RAM used by MATLAB/octave, in bytes  
   `est_times` : estimated clock time in secs since graph started  
   `cpu_times` : MATLAB/octave CPU time used (counting all threads) reported by top  
   `cpu_usages` : current percentage CPU usage by MATLAB/octave at each time
 
-To clean up (kill the `top` process, and other `top` instances!):
+To clean up (sadly, this kills all instances of `top` the user has!):
 
 `memorygraph('done');`
 
