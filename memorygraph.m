@@ -59,15 +59,21 @@ if strcmp(s,'start')
   % line-buffering needed otherwise have to wait for 4kB chunks.
   
 elseif strcmp(s,'get')
-  f = fopen(tempfile);      % read in temp text file
-  c = textscan(f,'%d %s %d %d %s %s %d %s %f %f %s %s'); % let's hope no-one
-  % changed the column ordering of the top command.
-  fclose(f);
+  empty = true; count = 0;   % if no file yet, wait a bit...
+  while (empty | count>=10)
+    f = fopen(tempfile);      % read in temp text file
+    c = textscan(f,'%d %s %d %d %s %s %d %s %f %f %s %s'); % let's hope no-one
+        % changed the column ordering of the top command.
+    fclose(f);
+    empty = (numel(c)==0);
+    pause(dt);
+    count=count+1;
+  end
   ba = c{6};   % cell array of mem strings. Assumes std "top" col ordering.
   ta = c{11};  % cell array of CPU time strings
   ca = c{9};   % double array of CPU usages
   n = min(numel(ba),numel(ta));    % # valid rows
-  if n<1, warning('no memorygraph data found!'); end
+  if n<1, warning('we waited, but no memorygraph data found!'); end
   estclock = (0:n-1)*dt;   % assume top outputs like clockwork
   for i=1:n
     b = ba{i};
