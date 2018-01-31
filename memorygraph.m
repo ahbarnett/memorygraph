@@ -15,6 +15,7 @@ function [bytes estclock cput cpuu] = memorygraph(s,opts)
 %  est_times      = estimated clock time in secs since graph started
 %  cpu_times      = MATLAB CPU time used (counting all threads) reported by top
 %  cpu_usages     = current percentage CPU usage by MATLAB at each time
+% One may do multiple such calls.
 %
 % To clean up (kill the 'top' process, and other 'top' instances!):
 %     memorygraph('done');
@@ -43,14 +44,15 @@ bytes = []; estclock = []; cput = []; cpuu = [];
 
 tempfile = 'memorygraph.tmp';  % hard-coded; hope doesn't overwrite something
 if nargin<2, opts=[]; end
-dt = 1.0;                      % default sampling interval in s
-if isfield(opts,'dt'), dt=opts.dt; end
+persistent dt
 
 % decide what unix process name to search for...
 if exist('OCTAVE_VERSION', 'builtin'), parent='octave';
 else, parent='MATLAB'; end
 
 if strcmp(s,'start')
+  dt = 1.0;                      % default sampling interval in s
+  if isfield(opts,'dt'), dt=opts.dt; end
   [~,user]=system('whoami'); user = user(1:end-1); % get user, kill trailing CR
   system(sprintf('top -b -u %s -d %.1f -n 100000 | grep --line-buffered %s > %s &',user,dt,parent,tempfile));
   % change -n here for longest run; mostly to prevent running forever.
@@ -107,7 +109,6 @@ if isempty(b)
   disp('no data found! This happens; just retest')
 else
   figure; subplot(1,2,1);
-  t2 = 0.1*(1:numel(b));   % assume regular time
   plot(et,b,'.-'); xlabel('est elapsed time (s)'); ylabel('RAM used (bytes)');
   title('memorygraph self-test: RAM');
   subplot(1,2,2);
