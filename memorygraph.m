@@ -46,15 +46,14 @@ tempfile = 'memorygraph.tmp';  % hard-coded; hope doesn't overwrite something
 if nargin<2, opts=[]; end
 persistent dt
 
-% decide what unix process name to search for...
-if exist('OCTAVE_VERSION', 'builtin'), parent='octave';
-else, parent='MATLAB'; end
+% decide what unix process id to search for
+pid = get_pid();
 
 if strcmp(s,'start')
   dt = 1.0;                      % default sampling interval in s
   if isfield(opts,'dt'), dt=opts.dt; end
   [~,user]=system('whoami'); user = user(1:end-1); % get user, kill trailing CR
-  system(sprintf('top -b -u %s -d %.1f -n 100000 | grep --line-buffered %s > %s &',user,dt,parent,tempfile));
+  system(sprintf('top -b -p %d -d %.1f -n 100000 | grep --line-buffered "^%d" > %s &',pid,dt,pid,tempfile));
   % change -n here for longest run; mostly to prevent running forever.
   % line-buffering needed otherwise have to wait for 4kB chunks.
   
@@ -126,3 +125,11 @@ else
 end
   
 % to check no remaining top running:  ps -e |grep " top"
+
+function pid = get_pid()
+
+if exist('OCTAVE_VERSION', 'builtin')
+    pid = getpid();
+else
+    pid = feature('getpid');
+end
