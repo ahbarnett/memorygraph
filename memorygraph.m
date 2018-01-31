@@ -71,7 +71,8 @@ elseif strcmp(s,'get')
   estclock = (0:n-1)*dt;   % assume top outputs like clockwork
   for i=1:n
     b = ba{i};
-    if b(end)=='g', by = 2^30*str2double(b(1:end-1));     % interpret GiB units
+    if b(end)=='t', by = 2^40*str2double(b(1:end-1));     % interpret TiB units
+    elseif b(end)=='g', by = 2^30*str2double(b(1:end-1)); % GiB units
     elseif b(end)=='m', by = 2^20*str2double(b(1:end-1)); % MiB units
     else by = 2^10*str2double(b); end                     % KiB units
     bytes(i) = by;
