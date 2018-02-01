@@ -42,18 +42,19 @@ bytes = []; estclock = []; cput = []; cpuu = [];
 
 tempfile = 'memorygraph.tmp';  % hard-coded; hope doesn't overwrite something
 if nargin<2, opts=[]; end
-persistent dt
+persistent dt top_pid
 
-% decide what unix process id to search for
-pid = get_pid();
+% decide what unix process id to search for: the current MATLAB/octave PID
+pid = get_pid();   % see function defined below
 
 if strcmp(s,'start')
   dt = 1.0;                      % default sampling interval in secs
   if isfield(opts,'dt'), dt=opts.dt; end
-  [~,user]=system('whoami'); user = user(1:end-1); % get user, kill trailing CR
-  system(sprintf('top -b -p %d -d %.1f -n 100000 | grep --line-buffered "^%d" > %s &',pid,dt,pid,tempfile));
+  top_cmd = sprintf('top -b -p %d -d %.1f -n 100000 | grep --line-buffered "^%d" > %s',pid,dt,pid,tempfile);
   % change -n here for longest run; mostly to prevent running forever.
   % line-buffering needed otherwise have to wait for 4kB chunks.
+  [~,out] = system(sprintf('%s & echo $!',top_cmd));  % Jeremy Magland
+  top_pid = str2double(strtrim(out))
   
 elseif strcmp(s,'get')
   empty = true; count = 0;   % if no file yet, wait a bit...
@@ -87,7 +88,7 @@ elseif strcmp(s,'get')
   end
 
 elseif strcmp(s,'done')
-  system('killall top');                 % so lame! But how get the true PID?
+  system(sprintf('kill %d',top_pid));
   system(sprintf('rm -f %s',tempfile));
   
 else error('unknown usage');
@@ -120,7 +121,7 @@ pause(1)
 [b et ct c] = memorygraph('get');
 memorygraph('done');
 if isempty(b)
-  disp('no data found! This happens; just retest')
+  disp('no data found! This shouldn''t happen')
 else
   figure; subplot(1,2,1);
   plot(et,b,'.-'); xlabel('est elapsed time (s)'); ylabel('RAM used (bytes)');
