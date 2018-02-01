@@ -24,19 +24,17 @@ function [bytes estclock cput cpuu] = memorygraph(s,opts)
 %
 % Notes:
 % 0) Linux/unix only. MATLAB or octave.
-% 1) Very crude: assumes only one MATLAB instance per user, and no
+% 1) Very crude: assumes no
 %    other instances of top running by user. Hard-coded temp-file. Etc.
-% 2) If only a few secs have elapsed, the memory graph can come back empty.
-%    This is because of caching of the pipe to the temp file.
-% 3) Max run time is baked in at 1e4 secs (about 3 hrs).
-% 4) The 'top' display config must be standard (no changes to /etc/toprc
+% 2) Max run time is baked in at 1e4 secs (about 3 hrs).
+% 3) The 'top' display config must be standard (no changes to /etc/toprc
 %    nor ~/.toprc).
 %
 % Todo:
 % * How do we get actual time without estimating?
 % * How get PID of the top process to kill only it?
 
-% (C) Alex Barnett 1/30/18
+% (C) Alex Barnett 1/30/18-2/1/18. Improvements by Joakim Anden.
 
 if nargin==0, test_memorygraph; return; end
 
@@ -50,7 +48,7 @@ persistent dt
 pid = get_pid();
 
 if strcmp(s,'start')
-  dt = 1.0;                      % default sampling interval in s
+  dt = 1.0;                      % default sampling interval in secs
   if isfield(opts,'dt'), dt=opts.dt; end
   [~,user]=system('whoami'); user = user(1:end-1); % get user, kill trailing CR
   system(sprintf('top -b -p %d -d %.1f -n 100000 | grep --line-buffered "^%d" > %s &',pid,dt,pid,tempfile));
@@ -62,7 +60,7 @@ elseif strcmp(s,'get')
   while (empty | count>=10)
     f = fopen(tempfile);      % read in temp text file
     c = textscan(f,'%d %s %d %d %s %s %d %s %f %f %s %s'); % let's hope no-one
-        % changed the column ordering of the top command.
+        % changed the column ordering of the top command...
     fclose(f);
     empty = (numel(c)==0);
     pause(dt);
@@ -95,6 +93,16 @@ elseif strcmp(s,'done')
 else error('unknown usage');
 end
 
+
+function pid = get_pid()
+% Joakim Anden
+if exist('OCTAVE_VERSION', 'builtin')
+  pid = getpid();
+else
+  pid = feature('getpid');   % cute
+end
+
+
 %%%%%%%%%%%
 function test_memorygraph
 opts.dt = 0.1; memorygraph('start',opts);
@@ -125,11 +133,3 @@ else
 end
   
 % to check no remaining top running:  ps -e |grep " top"
-
-function pid = get_pid()
-
-if exist('OCTAVE_VERSION', 'builtin')
-    pid = getpid();
-else
-    pid = feature('getpid');
-end
