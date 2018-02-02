@@ -1,7 +1,7 @@
 # memorygraph
 MATLAB/octave unix tool to record true MATLAB/octave memory and CPU usage vs time
 
-Alex Barnett 1/30/18
+Alex Barnett 1/30/18-2/1/18. With improvements by Joakim Anden, Jeremy Magland.
 
 <img src="selftest.png" width="800"/>
 
@@ -37,7 +37,7 @@ This gives outputs:
   `cpu_times` : MATLAB/octave CPU time used (counting all threads) reported by top  
   `cpu_usages` : current percentage CPU usage by MATLAB/octave at each time  
 
-To clean up (sadly, this currently also kills all instances of `top` the user has!):
+To clean up (kills the spawned processes and removes the temp file):
 
 `memorygraph('done');`
 
@@ -46,14 +46,15 @@ Without args: does a self-test, produces the graph shown above.
 ### Notes:
 
 - Linux/unix only. Tested in MATLAB and octave.  
-- Very crude: assumes only one MATLAB instance per user, and no other instances of top running by user. Hard-coded temp-file. Etc.  
-- If only a few secs have elapsed, the memory graph can come back empty. This is because of caching of the pipe to the temp file.  
+- Hard-coded temp-file location for now.  
 - Max run time is baked in at 1e4 secs (about 3 hrs).  
-- The 'top' display config must be standard (no changes to `/etc/toprc` nor `~/.toprc`).
+- The `top` display config must be standard (no changes to `/etc/toprc` nor `~/.toprc`).  
 
 ### Issues:
 
-- How do we get actual time without estimating?  
-- How get PID of the spawned process to kill it and only it?  
+- How do we get actual timestamps without estimating? (spawn 2nd process which appends to same temp file at time intervals?)  
 
-Please contribute fixes for the above issues.
+### Changes:
+
+- Joakim and Jeremy helped fix the correct PID for the MATLAB/octave instance
+and the correct PID to kill.

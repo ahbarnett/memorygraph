@@ -17,24 +17,23 @@ function [bytes estclock cput cpuu] = memorygraph(s,opts)
 %  cpu_usages     = current percentage CPU usage by MATLAB at each time
 % One may do multiple such calls.
 %
-% To clean up (kill the 'top' process, and other 'top' instances!):
+% To clean up (kills the spawned 'top' and 'grep' processes):
 %     memorygraph('done');
 %
 % Without args: does a self-test, produces the graph shown in git repo.
 %
 % Notes:
 % 0) Linux/unix only. MATLAB or octave.
-% 1) Very crude: assumes no
-%    other instances of top running by user. Hard-coded temp-file. Etc.
+% 1) Very crude: assumes no other instances of top running by user.
+%    Hard-coded temp-file. Etc.
 % 2) Max run time is baked in at 1e4 secs (about 3 hrs).
 % 3) The 'top' display config must be standard (no changes to /etc/toprc
 %    nor ~/.toprc).
 %
 % Todo:
-% * How do we get actual time without estimating?
-% * How get PID of the top process to kill only it?
+% * How do we get actual timestamps without estimating?
 
-% (C) Alex Barnett 1/30/18-2/1/18. Improvements by Joakim Anden.
+% (C) Alex Barnett 1/30/18-2/1/18. Improvements by Joakim Anden, Jeremy Magland.
 
 if nargin==0, test_memorygraph; return; end
 
@@ -50,15 +49,22 @@ pid = get_pid();   % see function defined below
 if strcmp(s,'start')
   dt = 1.0;                      % default sampling interval in secs
   if isfield(opts,'dt'), dt=opts.dt; end
-  top_cmd = sprintf('top -b -p %d -d %.1f -n 100000 | grep --line-buffered "^%d" > %s',pid,dt,pid,tempfile);
+  top_cmd = sprintf('top -b -p %d -d %.1f -n 100000 | awk ''{$1=$1}1'' | grep --line-buffered "^%d" > %s',pid,dt,pid,tempfile);
   % change -n here for longest run; mostly to prevent running forever.
   % line-buffering needed otherwise have to wait for 4kB chunks.
-  [~,out] = system(sprintf('%s & echo $!',top_cmd));  % Jeremy Magland
-  top_pid = str2double(strtrim(out))
+  % Note: 'top' is better than 'ps' since it sums up child processes RAM and
+  % CPU usage.
+  % awk hack is needed to remove leading space
+  % (grep "^%d" doesn't handle leading space)
+  [~,out] = system(sprintf('%s & jobs -p',top_cmd)); % sim to Jeremy Magland...
+  % But, using jobs gives the parent PID (top), which when killed also kills
+  % the grep. However, if echo $! were used, it only gets PID of grep,
+  % and the top is not killed.
+  top_pid = str2double(strtrim(out));
   
 elseif strcmp(s,'get')
   empty = true; count = 0;   % if no file yet, wait a bit...
-  while (empty | count>=10)
+  while (empty || count>=10)
     f = fopen(tempfile);      % read in temp text file
     c = textscan(f,'%d %s %d %d %s %s %d %s %f %f %s %s'); % let's hope no-one
         % changed the column ordering of the top command...
@@ -88,12 +94,11 @@ elseif strcmp(s,'get')
   end
 
 elseif strcmp(s,'done')
-  system(sprintf('kill %d',top_pid));
+  system(sprintf('kill %d',top_pid));    % killing top also kills rest of pipe
   system(sprintf('rm -f %s',tempfile));
   
 else error('unknown usage');
 end
-
 
 function pid = get_pid()
 % Joakim Anden
