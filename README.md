@@ -1,9 +1,9 @@
 # memorygraph
 MATLAB/octave unix tool to record true MATLAB/octave memory and CPU usage vs time
 
-Alex Barnett 1/30/18-2/1/18. With improvements by Joakim Anden, Jeremy Magland.
+Alex Barnett 1/30/18-2/11/18. With improvements by Joakim Anden, Jeremy Magland.
 
-<img src="selftest.png" width="800"/>
+<img src="selftest.png" width="700"/>
 
 One point of this tool is to be able to extract reliable
 true peak RAM usage by
@@ -11,7 +11,7 @@ a MATLAB/ocatve code, without the need to continuously human-read (h)top.
 
 ### Installation
 
-Place the code `memorygraph.m` somewhere in your MATLAB/octave path.
+Place the codes `memorygraph.m` and `vline.m` somewhere in your MATLAB/octave path.
 
 ### Usage
 
@@ -28,7 +28,7 @@ This, or smaller dt, may cause top to slow down the CPU.
 
 To read off graph recorded so far (this may be done multiple times):
 
-`[bytes est_times cpu_times cpu_usages] = memorygraph('get');`
+`[bytes est_times cpu_times cpu_usages labelstrings labeltimes] = memorygraph('get');`
 
 This gives outputs:
 
@@ -36,6 +36,16 @@ This gives outputs:
   `est_times` : estimated clock time in secs since graph started  
   `cpu_times` : MATLAB/octave CPU time used (counting all threads) reported by top  
   `cpu_usages` : current percentage CPU usage by MATLAB/octave at each time  
+  `labelstrings` : cell array of strings the user has added  
+  `labeltimes` : array of times since starting, in sec, for added labels  
+
+To read off, as above, and also plot a graph:
+
+`[bytes est_times cpu_times cpu_usages labelstrings labeltimes] = memorygraph('plot');`
+
+To add a test string 'abc' which will appear alongside a vertical red line:
+
+  `memorygraph('label','abc');`
 
 To clean up (kills the spawned processes and removes the temp file):
 
@@ -57,4 +67,6 @@ Without args: does a self-test, produces the graph shown above.
 ### Changes:
 
 - Joakim and Jeremy helped fix the correct PID for the MATLAB/octave instance
-and the correct PID to kill.
+and the correct PID to kill.  
+
+- Added plot and label methods.

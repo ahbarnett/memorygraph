@@ -1,4 +1,4 @@
-function [bytes estclock cput cpuu] = memorygraph(s,opts)
+function [bytes estclock cput cpuu las lat] = memorygraph(s,arg2)
 % MEMORYGRAPH  collect RAM usage over used time for MATLAB, from MATLAB.
 %
 % Usage:
@@ -9,46 +9,55 @@ function [bytes estclock cput cpuu] = memorygraph(s,opts)
 % This, or smaller dt, may cause top to slow down the CPU.
 %
 % To read off graph recorded so far:
-%     [bytes est_times cpu_times cpu_usages] = memorygraph('get');
+%     [bytes est_times cpu_times cpu_usages labelstrings labeltimes] =
+%       memorygraph('get');
 % Outputs:
 %  bytes          = total RAM used by MATLAB, in bytes
 %  est_times      = estimated clock time in secs since graph started
 %  cpu_times      = MATLAB CPU time used (counting all threads) reported by top
 %  cpu_usages     = current percentage CPU usage by MATLAB at each time
+%  labelstrings   = cell array of strings the user has added
+%  labeltimes     = array of times since starting, in sec, for added labels
 % One may do multiple such calls.
 %
-% To clean up (kills the spawned 'top' and 'grep' processes):
+% To plot graph, and read off, as above:
+%     [bytes est_times cpu_times cpu_usages labelstrings labeltimes] =
+%       memorygraph('plot');
+%
+% To add a text string 'abc' which will appear alongside a vertical red line:
+%     memorygraph('label','abc');
+%
+% To clean up (kills the spawned 'top' and 'grep' processes, removes tmp file):
 %     memorygraph('done');
 %
 % Without args: does a self-test, produces the graph shown in git repo.
 %
 % Notes:
 % 0) Linux/unix only. MATLAB or octave.
-% 1) Very crude: assumes no other instances of top running by user.
-%    Hard-coded temp-file. Etc.
+% 1) Crude: hard-coded temp-file. Etc.
 % 2) Max run time is baked in at 1e4 secs (about 3 hrs).
 % 3) The 'top' display config must be standard (no changes to /etc/toprc
 %    nor ~/.toprc).
 %
 % Todo:
-% * How do we get actual timestamps without estimating?
+% * How do we get actual timestamps without guessing that top writes regularly?
 
-% (C) Alex Barnett 1/30/18-2/1/18. Improvements by Joakim Anden, Jeremy Magland.
+% (C) Alex Barnett 1/30/18-2/11/18. Improvements by Joakim Anden, Jeremy Magland
 
 if nargin==0, test_memorygraph; return; end
 
 bytes = []; estclock = []; cput = []; cpuu = [];
 
 tempfile = 'memorygraph.tmp';  % hard-coded; hope doesn't overwrite something
-if nargin<2, opts=[]; end
-persistent dt top_pid
+if nargin<2, arg2=[]; end
+persistent dt top_pid labelstrings labeltimes
 
 % decide what unix process id to search for: the current MATLAB/octave PID
 pid = get_pid();   % see function defined below
 
 if strcmp(s,'start')
   dt = 1.0;                      % default sampling interval in secs
-  if isfield(opts,'dt'), dt=opts.dt; end
+  if isfield(arg2,'dt'), dt=arg2.dt; end
   top_cmd = sprintf('top -b -p %d -d %.1f -n 100000 | awk ''{$1=$1}1'' | grep --line-buffered "^%d" > %s',pid,dt,pid,tempfile);
   % change -n here for longest run; mostly to prevent running forever.
   % line-buffering needed otherwise have to wait for 4kB chunks.
@@ -61,6 +70,7 @@ if strcmp(s,'start')
   % the grep. However, if echo $! were used, it only gets PID of grep,
   % and the top is not killed.
   top_pid = str2double(strtrim(out));
+  labelstrings = {}; labeltimes = [];
   
 elseif strcmp(s,'get')
   empty = true; count = 0;   % if no file yet, wait a bit...
@@ -93,13 +103,32 @@ elseif strcmp(s,'get')
     cpuu(i) = ca(i);
   end
 
+elseif strcmp(s,'plot')
+  [bytes estclock cput cpuu] = memorygraph('get');
+  figure; subplot(2,1,1);
+  plot(estclock,bytes,'.-');
+  xlabel('est elapsed time (s)'); ylabel('RAM used (bytes)');
+  vline(labeltimes,'r',labelstrings);
+  subplot(2,1,2);
+  plot(estclock,cpuu,'.-');
+  xlabel('est elapsed time (s)'); ylabel('CPU usage (percent)');
+  vline(labeltimes,'r',labelstrings);
+  
+elseif strcmp(s,'label')
+  labelstrings = {labelstrings{:},arg2};     % cell array append
+  [~,et] = memorygraph('get');
+  corr = 4*dt;                               % hand-tune a correction (why?)
+  labeltimes = [labeltimes,et(end)+corr];
+  
 elseif strcmp(s,'done')
   system(sprintf('kill %d',top_pid));    % killing top also kills rest of pipe
   system(sprintf('rm -f %s',tempfile));
   
 else error('unknown usage');
 end
+las = labelstrings; lat = labeltimes;  % use different outputs since persistent
 
+%%%%%%%%%%%
 function pid = get_pid()
 % Joakim Anden
 if exist('OCTAVE_VERSION', 'builtin')
@@ -115,25 +144,21 @@ opts.dt = 0.1; memorygraph('start',opts);
 disp('testing memorygraph: please wait 10 secs...')
 pause(1)
 a = randn(1,2e8);   % fill some RAM, not too fast (randn is single-threaded)
-disp('randn done');
+disp('randn done'); memorygraph('label','randn done');
 pause(1)
 b = exp(a);         % use more cores
-disp('exp done');
+disp('exp done'); memorygraph('label','exp done');   % time is still off
 clear a             % check clearing is as expected
 pause(1)
 clear b
 pause(1)
-[b et ct c] = memorygraph('get');
+[b et ct c las lat] = memorygraph('plot');
 memorygraph('done');
 if isempty(b)
   disp('no data found! This shouldn''t happen')
 else
-  figure; subplot(1,2,1);
-  plot(et,b,'.-'); xlabel('est elapsed time (s)'); ylabel('RAM used (bytes)');
-  title('memorygraph self-test: RAM');
-  subplot(1,2,2);
-  plot(et,c,'.-'); xlabel('est elapsed time (s)'); ylabel('CPU usage (percent)');
-  title('memorygraph self-test: CPU');
+  subplot(2,1,1); title('memorygraph self-test: RAM');
+  subplot(2,1,2); title('memorygraph self-test: CPU');
   disp('check the graph: RAM should go up ~3GB in two slopes, then jump down.');
   disp('CPU: a couple of secs of 100% (single core) then a couple of secs of all cores used, with 1-sec intervals in-between.');
 end
