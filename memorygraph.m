@@ -74,12 +74,12 @@ if strcmp(s,'start')
   
 elseif strcmp(s,'get')
   empty = true; count = 0;   % if no file yet, wait a bit...
-  while (empty || count>=10)
+  while (empty & count<10)
     f = fopen(tempfile);      % read in temp text file
     c = textscan(f,'%d %s %d %d %s %s %d %s %f %f %s %s'); % let's hope no-one
         % changed the column ordering of the top command...
     fclose(f);
-    empty = (numel(c)==0);
+    empty = (numel(c{1})==0);
     pause(dt);
     count=count+1;
   end
