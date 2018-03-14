@@ -137,12 +137,11 @@ function plotmemcpu(bytes,estclock,cput,cpuu,las,lat)   % make graphs
 figure; subplot(2,1,1);
 plot(estclock,bytes,'.-');
 xlabel('est elapsed time (s)'); ylabel('RAM used (bytes)');
-which vline
-if ~isempty(lat), vline(lat,[],las); end
+if ~isempty(lat), vline(lat,'r:',las); end
 subplot(2,1,2);
 plot(estclock,cpuu,'.-');
 xlabel('est elapsed time (s)'); ylabel('CPU usage (percent)');
-if ~isempty(lat), vline(lat,[],las); end
+if ~isempty(lat), vline(lat,'r:',las); end
 
 %%%%%%%%%%%
 function pid = get_pid()
