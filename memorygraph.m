@@ -35,8 +35,7 @@ function [bytes estclock cput cpuu las lat] = memorygraph(s,arg2)
 % Notes:
 % 0) Linux/unix only. MATLAB or octave.
 % 1) Crude: hard-coded temp-file. Etc.
-% 2) Max run time is baked in at 1e4 secs (about 3 hrs).
-% 3) The 'top' display config must be standard (no changes to /etc/toprc
+% 2) The 'top' display config must be standard (no changes to /etc/toprc
 %    nor ~/.toprc).
 %
 % Todo:
@@ -58,7 +57,7 @@ pid = get_pid();   % see function defined below
 if strcmp(s,'start')
   dt = 1.0;                      % default sampling interval in secs
   if isfield(arg2,'dt'), dt=arg2.dt; end
-  top_cmd = sprintf('top -b -p %d -d %.1f -n 100000 | awk ''{$1=$1}1'' | grep --line-buffered "^%d" > %s',pid,dt,pid,tempfile);
+  top_cmd = sprintf('top -b -p %d -d %.1f | awk ''{$1=$1}1'' | grep --line-buffered "^%d" > %s',pid,dt,pid,tempfile);
   % change -n here for longest run; mostly to prevent running forever.
   % line-buffering needed otherwise have to wait for 4kB chunks.
   % Note: 'top' is better than 'ps' since it sums up child processes RAM and
