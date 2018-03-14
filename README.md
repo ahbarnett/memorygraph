@@ -1,7 +1,7 @@
 # memorygraph
 MATLAB/octave unix tool to record true MATLAB/octave memory and CPU usage vs time
 
-Alex Barnett 1/30/18-2/11/18. With improvements by Joakim Anden, Jeremy Magland.
+Alex Barnett 1/30/18-3/14/18. With improvements by Joakim Anden, Jeremy Magland.
 
 <img src="selftest.png" width="700"/>
 
@@ -26,7 +26,11 @@ This samples every 1 sec. If you want more often use, eg
 
 This, or smaller dt, may cause top to slow down the CPU.
 
-To read off graph recorded so far (this may be done multiple times):
+To plot the graph recorded so far (this may be done multiple times):
+
+`memorygraph('plot');`
+
+To read off data recorded so far (this may be done multiple times):
 
 `[bytes est_times cpu_times cpu_usages labelstrings labeltimes] = memorygraph('get');`
 
@@ -43,6 +47,10 @@ To read off, as above, and also plot a graph:
 
 `[bytes est_times cpu_times cpu_usages labelstrings labeltimes] = memorygraph('plot');`
 
+To plot the data from the outputs (rather than read from the temp file):
+
+`memorygraph('plot',bytes,est_times,cpu_times,cpu_usages,labelstrings,labeltimes);`
+
 To add a test string 'abc' which will appear alongside a vertical red line:
 
   `memorygraph('label','abc');`
@@ -57,7 +65,6 @@ Without args: does a self-test, produces the graph shown above.
 
 - Linux/unix only. Tested in MATLAB and octave.  
 - Hard-coded temp-file location for now.  
-- Max run time is baked in at 1e4 secs (about 3 hrs).  
 - The `top` display config must be standard (no changes to `/etc/toprc` nor `~/.toprc`).  
 
 ### Issues:
@@ -69,4 +76,4 @@ Without args: does a self-test, produces the graph shown above.
 - Joakim and Jeremy helped fix the correct PID for the MATLAB/octave instance
 and the correct PID to kill.  
 
-- Added plot and label methods.
+- Added plot and label methods, including plot from previous output.

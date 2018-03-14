@@ -43,12 +43,14 @@ function [bytes estclock cput cpuu las lat] = memorygraph(s,arg2,varargin)
 % 1) Crude: hard-coded temp-file. Etc.
 % 2) The 'top' display config must be standard (no changes to /etc/toprc
 %    nor ~/.toprc).
-%
+
 % Todo:
 % * How do we get actual timestamps without guessing that top writes regularly?
 
-% (C) Alex Barnett 1/30/18-2/11/18. Improvements by Joakim Anden, Jeremy Magland
-% Added plot options 3/14/18
+% Copyright (C) 2018 The Simons Foundation, Inc. - All Rights Reserved.
+%
+% Author: Alex Barnett 1/30/18-3/14/18.
+% Improvements by Joakim Anden, Jeremy Magland
 
 if nargin==0, test_memorygraph; return; end
 
