@@ -1,4 +1,4 @@
-function [bytes estclock cput cpuu las lat] = memorygraph(s,arg2)
+function [bytes estclock cput cpuu las lat] = memorygraph(s,arg2,varargin)
 % MEMORYGRAPH  collect RAM usage over used time for MATLAB, from MATLAB.
 %
 % Usage:
@@ -20,9 +20,15 @@ function [bytes estclock cput cpuu las lat] = memorygraph(s,arg2)
 %  labeltimes     = array of times since starting, in sec, for added labels
 % One may do multiple such calls.
 %
-% To plot graph, and read off, as above:
+% To plot graph,
+%      memorygraph('plot');
+% 
+% To also read off, as above,
 %     [bytes est_times cpu_times cpu_usages labelstrings labeltimes] =
-%       memorygraph('plot');
+%        memorygraph('plot');
+% To instead plot from given data (not load from temp file),
+%     memorygraph('plot',bytes,est_times,cpu_times,cpu_usages,labelstrings,...
+%        labeltimes);
 %
 % To add a text string 'abc' which will appear alongside a vertical red line:
 %     memorygraph('label','abc');
@@ -42,6 +48,7 @@ function [bytes estclock cput cpuu las lat] = memorygraph(s,arg2)
 % * How do we get actual timestamps without guessing that top writes regularly?
 
 % (C) Alex Barnett 1/30/18-2/11/18. Improvements by Joakim Anden, Jeremy Magland
+% Added plot options 3/14/18
 
 if nargin==0, test_memorygraph; return; end
 
@@ -103,19 +110,17 @@ elseif strcmp(s,'get')
   end
 
 elseif strcmp(s,'plot')
-  [bytes estclock cput cpuu] = memorygraph('get');
-  figure; subplot(2,1,1);
-  plot(estclock,bytes,'.-');
-  xlabel('est elapsed time (s)'); ylabel('RAM used (bytes)');
-  vline(labeltimes,'r',labelstrings);
-  subplot(2,1,2);
-  plot(estclock,cpuu,'.-');
-  xlabel('est elapsed time (s)'); ylabel('CPU usage (percent)');
-  vline(labeltimes,'r',labelstrings);
+  if nargin==1
+    [bytes estclock cput cpuu] = memorygraph('get');
+    plotmemcpu(bytes,estclock,cput,cpuu,labelstrings,labeltimes)
+  else
+    plotmemcpu(arg2, varargin{:});
+  end
   
 elseif strcmp(s,'label')
   labelstrings = {labelstrings{:},arg2};     % cell array append
   [~,et] = memorygraph('get');
+  if isempty(et), et=0.0; end                % gracefully handle no data
   corr = 4*dt;                               % hand-tune a correction (why?)
   labeltimes = [labeltimes,et(end)+corr];
   
@@ -126,6 +131,18 @@ elseif strcmp(s,'done')
 else error('unknown usage');
 end
 las = labelstrings; lat = labeltimes;  % use different outputs since persistent
+
+%%%%%%%%%%%
+function plotmemcpu(bytes,estclock,cput,cpuu,las,lat)   % make graphs
+figure; subplot(2,1,1);
+plot(estclock,bytes,'.-');
+xlabel('est elapsed time (s)'); ylabel('RAM used (bytes)');
+which vline
+if ~isempty(lat), vline(lat,[],las); end
+subplot(2,1,2);
+plot(estclock,cpuu,'.-');
+xlabel('est elapsed time (s)'); ylabel('CPU usage (percent)');
+if ~isempty(lat), vline(lat,[],las); end
 
 %%%%%%%%%%%
 function pid = get_pid()
