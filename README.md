@@ -1,7 +1,7 @@
 # memorygraph
 MATLAB/octave unix tool to record true MATLAB/octave memory and CPU usage vs time
 
-Alex Barnett 1/30/18-3/14/18. With improvements by Joakim Anden, Jeremy Magland.
+<b>Alex Barnett</b>  1/30/18-3/14/18; version of 10/15/18.  With improvements by Joakim Anden, Jeremy Magland.
 
 <img src="selftest.png" width="700"/>
 
@@ -94,19 +94,30 @@ To clean up (kills the spawned processes and removes the temp file):
 
 Without args: does a self-test, produces the graph shown above.
 
+### Advanced usage
+
+Temp files simply have each row as a filtered output from the unix `top` command, called at successive instants. They are therefore somewhat human readable.
+To get or plot an old temp file (without labels), use, for example:
+
+`memorygraph('plot','/tmp/memorygraph_f51f2aff.tmp');`
+
 ### Notes:
 
 - Linux/unix only. Tested in MATLAB and octave.  
-- Hard-coded temp-file location for now.  
+- Hard-coded temp-file location, a randomly generated filename in the current directory.
+There is a miniscule probability of overwriting the tempfile of another program running `memorygraph` on the same filesystem.
 - The `top` display config must be standard (no changes to `/etc/toprc` nor `~/.toprc`).  
 
 ### Issues:
 
 - How do we get actual timestamps without estimating? (spawn 2nd process which appends to same temp file at time intervals?)  
+- Why are label time-stamps sometimes off?  
 
 ### Changes:
 
 - Joakim and Jeremy helped fix the correct PID for the MATLAB/octave instance
 and the correct PID to kill.  
 
-- Added plot and label methods, including plot from previous output.
+- Added plot and label methods, including plot from previous output.  
+
+- Made randomized temp filename, and option to get or plot any temp filename.  

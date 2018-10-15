@@ -45,25 +45,28 @@ function [bytes estclock cput cpuu las lat] = memorygraph(s,arg2,varargin)
 %    nor ~/.toprc).
 
 % Todo:
-% * How do we get actual timestamps without guessing that top writes regularly?
+% * understand why label times are sometimes off
+% * how do we get actual timestamps without guessing that top writes regularly?
 
 % Copyright (C) 2018 The Simons Foundation, Inc. - All Rights Reserved.
 %
-% Author: Alex Barnett 1/30/18-3/14/18.
+% Author: Alex Barnett 1/30/18. Latest version 10/15/18.
 % Improvements by Joakim Anden, Jeremy Magland
 
 if nargin==0, test_memorygraph; return; end
 
 bytes = []; estclock = []; cput = []; cpuu = [];
 
-tempfile = 'memorygraph.tmp';  % hard-coded; hope doesn't overwrite something
 if nargin<2, arg2=[]; end
-persistent dt top_pid labelstrings labeltimes
+persistent dt top_pid labelstrings labeltimes tempfile
 
 % decide what unix process id to search for: the current MATLAB/octave PID
 pid = get_pid();   % see function defined below
 
 if strcmp(s,'start')
+  % choose tempfile once (~1e-9 probability of overwriting a previous run)
+  tempfile = sprintf('memorygraph_%x.tmp',randi([0 intmax('uint32')], 'uint32'));
+  % (NB disadvantage of putting in /tmp/ here is that can't check slurm runs)
   dt = 1.0;                      % default sampling interval in secs
   if isfield(arg2,'dt'), dt=arg2.dt; end
   top_cmd = sprintf('top -b -p %d -d %.1f | awk ''{$1=$1}1'' | grep --line-buffered "^%d" > %s',pid,dt,pid,tempfile);
@@ -81,9 +84,14 @@ if strcmp(s,'start')
   labelstrings = {}; labeltimes = [];
   
 elseif strcmp(s,'get')
+  if nargin<2
+    thistempfile = tempfile;
+  else                       % 2nd arg overrides tempfile from its global value
+    thistempfile = arg2;
+  end
   empty = true; count = 0;   % if no file yet, wait a bit...
   while (empty & count<10)
-    f = fopen(tempfile);      % read in temp text file
+    f = fopen(thistempfile);      % read in temp text file
     c = textscan(f,'%d %s %d %d %s %s %d %s %f %f %s %s'); % let's hope no-one
         % changed the column ordering of the top command...
     fclose(f);
@@ -116,7 +124,12 @@ elseif strcmp(s,'plot')
     [bytes estclock cput cpuu] = memorygraph('get');
     plotmemcpu(bytes,estclock,cput,cpuu,labelstrings,labeltimes)
   else
-    plotmemcpu(arg2, varargin{:});
+    if ischar(arg2)       % interpret as filename
+      [bytes estclock cput cpuu] = memorygraph('get',arg2);
+      plotmemcpu(bytes,estclock,cput,cpuu)
+    else
+      plotmemcpu(arg2, varargin{:});
+    end
   end
   
 elseif strcmp(s,'label')
@@ -136,6 +149,7 @@ las = labelstrings; lat = labeltimes;  % use different outputs since persistent
 
 %%%%%%%%%%%
 function plotmemcpu(bytes,estclock,cput,cpuu,las,lat)   % make graphs
+if nargin<5, las=[]; lat=[]; end
 figure; subplot(2,1,1);
 plot(estclock,bytes,'.-');
 xlabel('est elapsed time (s)'); ylabel('RAM used (bytes)');
@@ -181,3 +195,4 @@ else
 end
   
 % to check no remaining top running:  ps -e |grep " top"
+% to kill them (and other stuff maybe...):  killall top
