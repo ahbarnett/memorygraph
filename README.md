@@ -8,6 +8,38 @@ Alex Barnett 1/30/18-3/14/18. With improvements by Joakim Anden, Jeremy Magland.
 One point of this tool is to be able to extract reliable
 true peak RAM usage by
 a MATLAB/ocatve code, without the need to continuously human-read (h)top.
+The example graphs above show RAM and CPU usage vs time, when executing the
+MATLAB commands
+```
+pause(1)
+a = randn(1,2e8);              % fills 1.6GB RAM. randn is single-threaded
+pause(1)
+b = exp(a);                    % fills another 1.6GB. Uses 8 threads
+clear a                        % frees up the first 1.6GB
+pause(1)
+clear b                        % frees up the remaining 1.6GB
+pause(1)
+```
+The `pause` commands are to demonstrate that the graph has the correct timing, and to separate the two calculation phases for clarity.
+Here's how you modify this code, by inserting five lines of memorygraph calls,
+to produce the above graphs (two of these lines insert the red fiduciary labels):
+```
+opts.dt = 0.1; memorygraph('start',opts);
+pause(1)
+a = randn(1,2e8);              % fills 1.6GB RAM. randn is single-threaded
+memorygraph('label','randn done');
+pause(1)
+b = exp(a);                    % fills another 1.6GB. Uses 8 threads
+memorygraph('label','exp done');
+clear a               	       % frees up the first 1.6GB
+pause(1)
+clear b			       % frees up the remaining 1.6GB
+pause(1)
+memorygraph('plot');
+memorygraph('done');
+```
+Note that the first label is spot-on in terms of timing, but the second comes early; we don't know why. Labels are therefore only approximate tools, but are very useful to tag multiple calculation steps. (Note the above was done on a laptop with i7-7700HQ CPU.)
+
 
 ### Installation
 
@@ -15,7 +47,8 @@ Place the codes `memorygraph.m` and `vline.m` somewhere in your MATLAB/octave pa
 
 ### Usage
 
-From MATLAB/octave,
+Firstly, see the simple example above. For more detail,
+from MATLAB/octave,
 to start a graph (starts recording to a temp file in current directory):
 
 `memorygraph('start');`
