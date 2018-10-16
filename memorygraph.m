@@ -65,7 +65,7 @@ pid = get_pid();   % see function defined below
 
 if strcmp(s,'start')
   % choose tempfile once (~1e-9 probability of overwriting a previous run)
-  rng('shuffle');       % choose random seed based on time
+  randomizeseed;
   tempfile = sprintf('memorygraph_%x.tmp',randi([0 intmax('uint32')], 'uint32'));
   % (NB disadvantage of putting in /tmp/ here is that can't check slurm runs)
   dt = 1.0;                      % default sampling interval in secs
@@ -164,9 +164,17 @@ if ~isempty(lat), vline(lat,'r:',las); end
 function pid = get_pid()
 % Joakim Anden
 if exist('OCTAVE_VERSION', 'builtin')
-  pid = getpid();
+  pid = getpid;
 else
   pid = feature('getpid');   % cute
+end
+
+function randomizeseed()
+% set random seed for rand, based on current time.   Barnett 10/15/18
+if exist('OCTAVE_VERSION', 'builtin')
+  rand('seed',time);
+else
+  rng('shuffle');
 end
 
 
