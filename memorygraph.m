@@ -51,7 +51,7 @@ function [bytes estclock cput cpuu las lat] = memorygraph(s,arg2,varargin)
 % Copyright (C) 2018 The Simons Foundation, Inc. - All Rights Reserved.
 %
 % Author: Alex Barnett 1/30/18. Latest version 10/15/18.
-% Improvements by Joakim Anden, Jeremy Magland
+% Includes improvements by Joakim Anden, Jeremy Magland.
 
 if nargin==0, test_memorygraph; return; end
 
@@ -92,11 +92,15 @@ elseif strcmp(s,'get')
   end
   empty = true; count = 0;   % if no file yet, wait a bit...
   while (empty & count<10)
-    f = fopen(thistempfile);      % read in temp text file
-    c = textscan(f,'%d %s %d %d %s %s %d %s %f %f %s %s'); % let's hope no-one
-        % changed the column ordering of the top command...
-    fclose(f);
-    empty = (numel(c{1})==0);
+    f = fopen(thistempfile);   % read in temp text file
+    if f==-1                   % invalid, tempfile has been destroyed :(
+      c = cell(1,12);          % dummy empty cell array
+    else
+      c = textscan(f,'%d %s %d %d %s %s %d %s %f %f %s %s'); % let's hope no-one
+                % changed the column ordering of the top command...
+      fclose(f);
+    end
+    empty = (numel(c{1})==0);  % either file is empty (no rows), or no file
     pause(dt);
     count=count+1;
   end
@@ -104,7 +108,7 @@ elseif strcmp(s,'get')
   ta = c{11};  % cell array of CPU time strings
   ca = c{9};   % double array of CPU usages
   n = min(numel(ba),numel(ta));    % # valid rows
-  if n<1, warning('we waited, but no memorygraph data found!'); end
+  if n<1, warning(sprintf('we waited, but no memorygraph data found in %s, or file has been erased!',tempfile)); end
   estclock = (0:n-1)*dt;   % assume top outputs like clockwork
   for i=1:n
     b = ba{i};
@@ -195,7 +199,7 @@ pause(1)
 [b et ct c las lat] = memorygraph('plot');
 memorygraph('done');
 if isempty(b)
-  disp('no data found! This shouldn''t happen')
+  disp('no data found! the self-test has failed. Did some alien intervention erase the tempfile?');
 else
   subplot(2,1,1); title('memorygraph self-test: RAM');
   subplot(2,1,2); title('memorygraph self-test: CPU');
