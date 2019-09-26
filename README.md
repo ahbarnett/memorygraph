@@ -106,7 +106,8 @@ To get or plot an old temp file (without labels), use, for example:
 - Linux/unix only. Tested in MATLAB and octave.  
 - Hard-coded temp-file location, a randomly generated filename in the current directory.
 There is a miniscule probability of overwriting the tempfile of another program running `memorygraph` on the same filesystem.
-- The `top` display config must be standard (no changes to `/etc/toprc` nor `~/.toprc`).  
+- The `top` display config must be standard (no changes to `/etc/toprc` nor `~/.toprc`).
+- James Jun has pointed out that there is a similar tool in python: https://github.com/parikls/mem_usage_ui  
 
 ### Issues:
 
